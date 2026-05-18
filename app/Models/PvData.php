@@ -75,36 +75,31 @@ class PvData extends Model
     }
 
     /**
-     * Get data within a date range for charts with 30-minute sampling
+     * Get data within a date range for charts with smart sampling
      */
     public static function getChartData($startDate = null, $endDate = null, $limit = 100)
     {
         $query = self::query();
 
         if ($startDate && $endDate) {
-            // Convert both dates to UTC timestamps and compare
-            $startTimestamp = $startDate->copy()->setTimezone('UTC')->timestamp;
-            $endTimestamp = $endDate->copy()->setTimezone('UTC')->timestamp;
-            
-            $query->whereRaw("UNIX_TIMESTAMP(created_at) BETWEEN ? AND ?", [$startTimestamp, $endTimestamp]);
+            // Simple date comparison without timezone conversion
+            $query->whereBetween('created_at', [$startDate, $endDate]);
         } elseif ($startDate) {
-            $startTimestamp = $startDate->copy()->setTimezone('UTC')->timestamp;
-            $query->whereRaw("UNIX_TIMESTAMP(created_at) >= ?", [$startTimestamp]);
+            $query->where('created_at', '>=', $startDate);
         } elseif ($endDate) {
-            $endTimestamp = $endDate->copy()->setTimezone('UTC')->timestamp;
-            $query->whereRaw("UNIX_TIMESTAMP(created_at) <= ?", [$endTimestamp]);
+            $query->where('created_at', '<=', $endDate);
         }
 
-        // Limit query to last 500 records for performance
-        $allData = $query->orderBy('created_at', 'asc')->limit(500)->get();
+        // Get all matching records without limit to preserve all data
+        $allData = $query->orderBy('created_at', 'asc')->get();
 
         if ($allData->isEmpty()) {
             return collect([]);
         }
 
-        // Smart sampling: if more than 50 records, sample down
-        if ($allData->count() > 50) {
-            $sampleInterval = max(1, intdiv($allData->count(), 50));
+        // Smart sampling: if more than $limit records, sample down
+        if ($allData->count() > $limit) {
+            $sampleInterval = max(1, intdiv($allData->count(), $limit));
             return $allData->filter(function ($item, $index) use ($sampleInterval) {
                 return $index % $sampleInterval === 0;
             });
