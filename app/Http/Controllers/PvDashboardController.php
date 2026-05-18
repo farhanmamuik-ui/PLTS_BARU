@@ -222,9 +222,17 @@ class PvDashboardController extends Controller
     {
         $latest = PvData::latest()->first();
 
+        // Handle timestamp conversion properly
         $recordedAt = now();
         if (!empty($payload['timestamp'])) {
-            $recordedAt = Carbon::createFromFormat('Y-m-d H:i:s', $payload['timestamp'], 'Asia/Jakarta');
+            // Parse timestamp assuming it's in Asia/Jakarta timezone
+            $recordedAt = Carbon::createFromFormat(
+                'Y-m-d H:i:s',
+                $payload['timestamp'],
+                'Asia/Jakarta'
+            );
+            // Ensure it's converted to UTC for database storage
+            $recordedAt = $recordedAt->setTimezone('UTC');
         }
 
         $data = [
@@ -253,25 +261,28 @@ class PvDashboardController extends Controller
 
     private function getDataByPeriod(string $period)
     {
+        // Use UTC for database queries to ensure consistency
+        $now = now('UTC');
+        
         return match ($period) {
             '1H' => PvData::getChartData(
-                now()->subHour(),
-                now(),
+                $now->copy()->subHour(),
+                $now,
                 60
             ),
             '24H' => PvData::getChartData(
-                now()->subDay(),
-                now(),
+                $now->copy()->subDay(),
+                $now,
                 288
             ),
             '7D' => PvData::getChartData(
-                now()->subDays(7),
-                now(),
+                $now->copy()->subDays(7),
+                $now,
                 7 * 24
             ),
             default => PvData::getChartData(
-                now()->subHour(),
-                now(),
+                $now->copy()->subHour(),
+                $now,
                 60
             ),
         };
