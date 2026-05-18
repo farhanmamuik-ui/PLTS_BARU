@@ -82,16 +82,17 @@ class PvData extends Model
         $query = self::query();
 
         if ($startDate && $endDate) {
-            // Convert dates to UTC Carbon instances for database comparison (DB stores in UTC)
-            $startDateUtc = $startDate->copy()->setTimezone('UTC');
-            $endDateUtc = $endDate->copy()->setTimezone('UTC');
-            $query->whereBetween('created_at', [$startDateUtc, $endDateUtc]);
+            // Convert both dates to UTC timestamps and compare
+            $startTimestamp = $startDate->copy()->setTimezone('UTC')->timestamp;
+            $endTimestamp = $endDate->copy()->setTimezone('UTC')->timestamp;
+            
+            $query->whereRaw("UNIX_TIMESTAMP(created_at) BETWEEN ? AND ?", [$startTimestamp, $endTimestamp]);
         } elseif ($startDate) {
-            $startDateUtc = $startDate->copy()->setTimezone('UTC');
-            $query->where('created_at', '>=', $startDateUtc);
+            $startTimestamp = $startDate->copy()->setTimezone('UTC')->timestamp;
+            $query->whereRaw("UNIX_TIMESTAMP(created_at) >= ?", [$startTimestamp]);
         } elseif ($endDate) {
-            $endDateUtc = $endDate->copy()->setTimezone('UTC');
-            $query->where('created_at', '<=', $endDateUtc);
+            $endTimestamp = $endDate->copy()->setTimezone('UTC')->timestamp;
+            $query->whereRaw("UNIX_TIMESTAMP(created_at) <= ?", [$endTimestamp]);
         }
 
         // Limit query to last 500 records for performance
