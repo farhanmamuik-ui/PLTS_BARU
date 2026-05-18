@@ -84,3 +84,4 @@ Route::prefix('debug')->group(function () {
             })->toArray(),
         ]);
     });
+});
