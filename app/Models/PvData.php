@@ -81,32 +81,16 @@ class PvData extends Model
     {
         $query = self::query();
 
-        // Ensure start and end dates are in UTC for database comparison
         if ($startDate && $endDate) {
-            // Convert to UTC strings for database comparison
-            $startUtc = $startDate instanceof \Carbon\Carbon ? $startDate->toDateTimeString() : $startDate;
-            $endUtc = $endDate instanceof \Carbon\Carbon ? $endDate->toDateTimeString() : $endDate;
-            
-            $query->whereBetween('created_at', [$startUtc, $endUtc]);
-            
-            \Log::debug('PvData Query', [
-                'startDate' => $startDate,
-                'endDate' => $endDate,
-                'startUtc' => $startUtc,
-                'endUtc' => $endUtc,
-            ]);
+            $query->whereBetween('created_at', [$startDate, $endDate]);
         } elseif ($startDate) {
-            $startUtc = $startDate instanceof \Carbon\Carbon ? $startDate->toDateTimeString() : $startDate;
-            $query->where('created_at', '>=', $startUtc);
+            $query->where('created_at', '>=', $startDate);
         } elseif ($endDate) {
-            $endUtc = $endDate instanceof \Carbon\Carbon ? $endDate->toDateTimeString() : $endDate;
-            $query->where('created_at', '<=', $endUtc);
+            $query->where('created_at', '<=', $endDate);
         }
 
         // Limit query to last 500 records for performance
         $allData = $query->orderBy('created_at', 'asc')->limit(500)->get();
-        
-        \Log::debug('PvData Count Retrieved', ['count' => $allData->count()]);
 
         if ($allData->isEmpty()) {
             return collect([]);
