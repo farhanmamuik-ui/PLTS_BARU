@@ -41,7 +41,7 @@ class PvDashboardController extends Controller
             'current' => $data->pluck('current'),
             'temperature' => $data->pluck('temperature'),
             'lux' => $data->pluck('lux'),
-            'power' => $data->map(fn ($item) => $item->voltage * $item->current),
+            'power', 'power_output' => $data->map(fn ($item) => $item->voltage * $item->current),
             default => $data->pluck('lux'),
         };
 
