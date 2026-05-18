@@ -82,11 +82,16 @@ class PvData extends Model
         $query = self::query();
 
         if ($startDate && $endDate) {
-            $query->whereBetween('created_at', [$startDate, $endDate]);
+            // Convert dates to UTC for database comparison (DB stores in UTC)
+            $startDateUtc = $startDate->copy()->setTimezone('UTC')->toDateTimeString();
+            $endDateUtc = $endDate->copy()->setTimezone('UTC')->toDateTimeString();
+            $query->whereBetween('created_at', [$startDateUtc, $endDateUtc]);
         } elseif ($startDate) {
-            $query->where('created_at', '>=', $startDate);
+            $startDateUtc = $startDate->copy()->setTimezone('UTC')->toDateTimeString();
+            $query->where('created_at', '>=', $startDateUtc);
         } elseif ($endDate) {
-            $query->where('created_at', '<=', $endDate);
+            $endDateUtc = $endDate->copy()->setTimezone('UTC')->toDateTimeString();
+            $query->where('created_at', '<=', $endDateUtc);
         }
 
         // Limit query to last 500 records for performance
